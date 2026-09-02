@@ -17,7 +17,7 @@ def process_ticker(ticker: str) -> pd.DataFrame:
     raw_file = RAW_DATA_PATH / f"{ticker}.parquet"
     df = pd.read_parquet(raw_file)
 
-    # yfinance can return a MultiIndex column header; flatten it
+    # flatten MultiIndex column header
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
 
@@ -40,7 +40,6 @@ def process_ticker(ticker: str) -> pd.DataFrame:
     df["log_return"] = np.log(df["Close"] / df["Close"].shift(1))
     df["ticker"] = ticker
     # note: return/log_return are NaN on the first row by construction
-    # (no prior close to compare to) -- this is expected, not a bug
 
     # checks if file exists and creates the directory if it doesn't
     PROCESSED_DATA_PATH.mkdir(parents=True, exist_ok=True)
