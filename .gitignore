@@ -1,4 +1,7 @@
 data/raw
 data/processed
 results
-.venv
+__pycache__
+*.pyc
+.venv/
+.egg-info/
