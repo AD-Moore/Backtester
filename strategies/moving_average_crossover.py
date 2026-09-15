@@ -4,13 +4,8 @@ from strategies.strategy_base import Strategy
 
 
 class MovingAverageCrossover(Strategy):
-    """Go long when the short-term moving average is above the long-term
-    moving average, flat otherwise (the classic "golden cross / death
-    cross" signal, just without the nicknames).
-
-    Defaults to a 20-day / 50-day crossover, but both windows are
-    configurable so you can experiment without editing this file.
-    """
+    """Long when the short MA is above the long MA, flat otherwise
+    (golden/death cross). Windows are configurable, default 20/50."""
 
     def __init__(self, short_window: int = 20, long_window: int = 50):
         if short_window >= long_window:
@@ -22,10 +17,6 @@ class MovingAverageCrossover(Strategy):
         short_ma = df["Close"].rolling(window=self.short_window).mean()
         long_ma = df["Close"].rolling(window=self.long_window).mean()
 
-        # 1 where the short MA is above the long MA, 0 otherwise.
-        # Rows before the long MA has enough data (first `long_window` - 1
-        # rows) will be NaN > NaN comparisons, which pandas resolves to
-        # False -> signal 0. That's intentional: no signal until there's
-        # enough history to compute both averages.
-        signals = (short_ma > long_ma).astype(int)
-        return signals
+        # NaN > NaN is False in pandas, so early rows (before long_ma has
+        # enough history) resolve to signal 0 automatically.
+        return (short_ma > long_ma).astype(int)
