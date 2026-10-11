@@ -78,6 +78,8 @@ def print_performance_report(
     m = compute_metrics(equity_curve, risk_free_rate)
     initial = equity_curve.iloc[0]
     final = equity_curve.iloc[-1]
+    start_date = equity_curve.index[0]
+    end_date = equity_curve.index[-1]
 
     width = 44
     label_width = 24
@@ -86,6 +88,7 @@ def print_performance_report(
     print(f"BACKTEST RESULTS: {label}")
     print("=" * width)
     print()
+    print(f"{'Period:':<{label_width}}{start_date.date()} to {end_date.date()}")
     print(f"{'Initial Capital:':<{label_width}}${initial:,.2f}")
     print(f"{'Final Value:':<{label_width}}${final:,.2f}")
     print(f"{'Total Return:':<{label_width}}{m['total_return']:+.2%}")
