@@ -72,6 +72,18 @@ def compute_metrics(equity_curve: pd.Series, risk_free_rate: float = 0.0) -> dic
     }
 
 
+def format_duration(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
+    """Calendar time between two dates, e.g. '6 years, 42 days'."""
+    years = end_date.year - start_date.year
+    if (end_date.month, end_date.day) < (start_date.month, start_date.day):
+        years -= 1
+    days = (end_date - (start_date + pd.DateOffset(years=years))).days
+
+    year_label = "year" if years == 1 else "years"
+    day_label = "day" if days == 1 else "days"
+    return f"{years} {year_label}, {days} {day_label}"
+
+
 def print_performance_report(
     label: str, equity_curve: pd.Series, risk_free_rate: float = 0.0
 ) -> None:
@@ -88,7 +100,8 @@ def print_performance_report(
     print(f"BACKTEST RESULTS: {label}")
     print("=" * width)
     print()
-    print(f"{'Period:':<{label_width}}{start_date.date()} to {end_date.date()}")
+    duration = format_duration(start_date, end_date)
+    print(f"{'Period:':<{label_width}}{start_date.date()} to {end_date.date()} ({duration})")
     print(f"{'Initial Capital:':<{label_width}}${initial:,.2f}")
     print(f"{'Final Value:':<{label_width}}${final:,.2f}")
     print(f"{'Total Return:':<{label_width}}{m['total_return']:+.2%}")
@@ -99,7 +112,8 @@ def print_performance_report(
     print()
     print(f"{'Max Drawdown:':<{label_width}}{m['max_drawdown']:.2%}")
     print("=" * width)
-    print("(trade count / win rate / costs not tracked yet)")
+    print("(trade count / win rate / costs not tracked yet)\n\n")
+
 
 
 if __name__ == "__main__":

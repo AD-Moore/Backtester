@@ -26,7 +26,7 @@ A modular Python backtesting framework for designing, testing, and evaluating al
 **Performance: metrics implemented, visualization not started.**
 - `metrics.py` computes total return, annualized return (CAGR), annualized volatility, Sharpe ratio, and max drawdown directly from the equity curve, and is wired into `main.py`'s output
 - Trade count, win rate, and transaction costs are not tracked — the engine doesn't log individual trades or model costs yet
-- Equity curve / drawdown charting not yet built
+- No charting yet — visualization is deliberately deferred until the results and underlying calculations are verified
 
 ---
 
@@ -126,10 +126,10 @@ backtester/
 - [x] Compute performance metrics (Sharpe, max drawdown, CAGR)
 - [ ] Implement mean reversion and momentum strategies
 - [ ] Track individual trades (count, win rate, avg trade return)
-- [ ] Visualize results (equity curve, drawdown chart)
 - [ ] Add transaction costs and slippage modeling
 - [ ] Support fractional shares, short positions, and multi-symbol portfolios
 - [ ] Portfolio optimization across strategies/assets
+- [ ] Visualize results (equity curve, drawdown chart) — deliberately last, once the results and underlying calculations are verified
 
 ---
 

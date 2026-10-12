@@ -1,5 +1,5 @@
 from data.loader import load_ticker
-from engine.backtest_engine import BacktestEngine, print_equity
+from engine.backtest_engine import BacktestEngine
 from performance.metrics import print_performance_report
 from strategies.buy_and_hold import BuyAndHold
 from strategies.moving_average_crossover import MovingAverageCrossover
@@ -20,14 +20,12 @@ def run(ticker: str, strategy_name: str):
     engine = BacktestEngine(df, strategy)
     equity_curve = engine.run()
 
-    print(f"\n=== {ticker} / {strategy_name} ===")
-    print_equity("First 5 days", equity_curve.head())
-    print_equity("Last 5 days", equity_curve.tail())
-    print()
-    print_performance_report(f"{ticker} / {strategy_name}", equity_curve)
+    label = f"{ticker} / {strategy_name}"
+    print_performance_report(label, equity_curve)
 
     return equity_curve
 
 
 if __name__ == "__main__":
+    run("AAPL", "ma_20_50")
     run("VGT", "buy_and_hold")
