@@ -1,10 +1,13 @@
-"""Performance metrics computed from a BacktestEngine equity curve.
+"""Performance metrics computed from a BacktestEngine run.
 
-Trade count, win rate, and transaction costs are intentionally left out --
-the engine doesn't track individual trades or costs yet (see README).
+Return/risk metrics come from the equity curve; trade statistics come
+from the engine's list of completed trades. Costs are not a separate
+metric -- they are already baked into both.
 """
 import numpy as np
 import pandas as pd
+
+from engine.trade import Trade
 
 TRADING_DAYS_PER_YEAR = 252
 
@@ -55,11 +58,39 @@ def sharpe_ratio(
     return excess_return / volatility
 
 
+def sortino_ratio(
+    equity_curve: pd.Series,
+    risk_free_rate: float = 0.0,
+    periods_per_year: int = TRADING_DAYS_PER_YEAR,
+) -> float:
+    """Like Sharpe, but only downside moves count as risk -- a strategy
+    isn't penalized for volatility that comes from large gains."""
+    returns = daily_returns(equity_curve)
+    downside = returns.clip(upper=0)
+    downside_deviation = np.sqrt((downside**2).mean()) * np.sqrt(periods_per_year)
+    if not downside_deviation > 0:  # also catches NaN from an empty series
+        return 0.0
+    excess_return = returns.mean() * periods_per_year - risk_free_rate
+    return excess_return / downside_deviation
+
+
+def drawdown_series(equity_curve: pd.Series) -> pd.Series:
+    """Fractional decline from the running peak on each day (0 at a new high)."""
+    running_max = equity_curve.cummax()
+    return (equity_curve - running_max) / running_max
+
+
 def max_drawdown(equity_curve: pd.Series) -> float:
     """Largest peak-to-trough decline, as a negative fraction."""
-    running_max = equity_curve.cummax()
-    drawdown = (equity_curve - running_max) / running_max
-    return drawdown.min()
+    return drawdown_series(equity_curve).min()
+
+
+def calmar_ratio(equity_curve: pd.Series) -> float:
+    """Annualized return per unit of worst drawdown."""
+    worst = max_drawdown(equity_curve)
+    if worst == 0:
+        return 0.0
+    return annualized_return(equity_curve) / abs(worst)
 
 
 def compute_metrics(equity_curve: pd.Series, risk_free_rate: float = 0.0) -> dict[str, float]:
@@ -68,7 +99,31 @@ def compute_metrics(equity_curve: pd.Series, risk_free_rate: float = 0.0) -> dic
         "annualized_return": annualized_return(equity_curve),
         "annualized_volatility": annualized_volatility(equity_curve),
         "sharpe_ratio": sharpe_ratio(equity_curve, risk_free_rate),
+        "sortino_ratio": sortino_ratio(equity_curve, risk_free_rate),
         "max_drawdown": max_drawdown(equity_curve),
+        "calmar_ratio": calmar_ratio(equity_curve),
+    }
+
+
+def trade_statistics(trades: list[Trade]) -> dict[str, float]:
+    """Summary of completed round trips. A position still open at the end
+    of the backtest is not a completed trade, so it isn't counted here."""
+    if not trades:
+        return {
+            "num_trades": 0,
+            "win_rate": float("nan"),
+            "avg_trade_return": float("nan"),
+            "profit_factor": float("nan"),
+        }
+
+    gross_profit = sum(t.pnl for t in trades if t.pnl > 0)
+    gross_loss = -sum(t.pnl for t in trades if t.pnl < 0)
+    return {
+        "num_trades": len(trades),
+        "win_rate": sum(t.is_win for t in trades) / len(trades),
+        "avg_trade_return": sum(t.return_pct for t in trades) / len(trades),
+        # dollars won per dollar lost; infinite if there were no losing trades
+        "profit_factor": gross_profit / gross_loss if gross_loss > 0 else float("inf"),
     }
 
 
@@ -85,7 +140,10 @@ def format_duration(start_date: pd.Timestamp, end_date: pd.Timestamp) -> str:
 
 
 def print_performance_report(
-    label: str, equity_curve: pd.Series, risk_free_rate: float = 0.0
+    label: str,
+    equity_curve: pd.Series,
+    risk_free_rate: float = 0.0,
+    trades: list[Trade] | None = None,
 ) -> None:
     m = compute_metrics(equity_curve, risk_free_rate)
     initial = equity_curve.iloc[0]
@@ -109,11 +167,21 @@ def print_performance_report(
     print(f"{'Annualized Return:':<{label_width}}{m['annualized_return']:.2%}")
     print(f"{'Annualized Volatility:':<{label_width}}{m['annualized_volatility']:.2%}")
     print(f"{'Sharpe Ratio:':<{label_width}}{m['sharpe_ratio']:.2f}")
+    print(f"{'Sortino Ratio:':<{label_width}}{m['sortino_ratio']:.2f}")
     print()
     print(f"{'Max Drawdown:':<{label_width}}{m['max_drawdown']:.2%}")
-    print("=" * width)
-    print("(trade count / win rate / costs not tracked yet)\n\n")
+    print(f"{'Calmar Ratio:':<{label_width}}{m['calmar_ratio']:.2f}")
 
+    if trades is not None:
+        t = trade_statistics(trades)
+        print()
+        print(f"{'Completed Trades:':<{label_width}}{t['num_trades']}")
+        if t["num_trades"] > 0:
+            print(f"{'Win Rate:':<{label_width}}{t['win_rate']:.2%}")
+            print(f"{'Avg Trade Return:':<{label_width}}{t['avg_trade_return']:+.2%}")
+            print(f"{'Profit Factor:':<{label_width}}{t['profit_factor']:.2f}")
+    print("=" * width)
+    print()
 
 
 if __name__ == "__main__":
@@ -125,4 +193,4 @@ if __name__ == "__main__":
     engine = BacktestEngine(df, MovingAverageCrossover(short_window=20, long_window=50))
     equity_curve = engine.run()
 
-    print_performance_report("AAPL / ma_20_50", equity_curve)
+    print_performance_report("AAPL / ma_20_50", equity_curve, trades=engine.trades)
