@@ -7,7 +7,6 @@ import pytest
 from engine.order import Order
 from engine.portfolio import Portfolio
 
-
 # Arbitrary fixed timestamp; no test here depends on its value.
 DATE = datetime(2024, 1, 2)
 
@@ -98,6 +97,16 @@ def test_equity_is_cash_plus_open_positions():
     portfolio.execute(buy(3, "MSFT"), 50.0)
     # cash 650 + 2 * 110 + 3 * 60
     assert portfolio.equity({"AAPL": 110.0, "MSFT": 60.0}) == pytest.approx(1050.0)
+
+
+def test_short_sale_adds_cash_but_not_equity():
+    portfolio = Portfolio(cash=1000.0)
+    portfolio.execute(sell(5), 100.0)
+    # the 500 received is owed back as 5 shares, so nothing has been gained yet
+    assert portfolio.cash == pytest.approx(1500.0)
+    assert portfolio.equity({"AAPL": 100.0}) == pytest.approx(1000.0)
+    # the debt grows if the price rises
+    assert portfolio.equity({"AAPL": 120.0}) == pytest.approx(900.0)
 
 
 def test_equity_ignores_closed_positions_without_a_price():
