@@ -19,11 +19,15 @@ class Portfolio:
             self.positions[symbol] = Position(symbol=symbol)
         return self.positions[symbol]
 
-    def execute(self, order: Order, fill_price: float) -> None:
+    def execute(self, order: Order, fill_price: float, commission: float = 0.0) -> None:
+        """Fill an order. commission is a cash amount, paid on top of a
+        buy and taken out of a sell's proceeds."""
+        if commission < 0:
+            raise ValueError("commission cannot be negative")
         pos = self.position(order.symbol)
 
         if order.side == "buy":
-            cost = order.quantity * fill_price
+            cost = order.quantity * fill_price + commission
             if cost > self.cash + 1e-9:  # tolerate float rounding dust
                 raise ValueError(
                     f"insufficient cash to buy {order.quantity} {order.symbol} "
@@ -33,7 +37,7 @@ class Portfolio:
             self.cash -= cost
         else:
             pos.sell(order.quantity, fill_price)  # raises if overselling
-            self.cash += order.quantity * fill_price
+            self.cash += order.quantity * fill_price - commission
 
     def equity(self, prices: dict[str, float]) -> float:
         """Cash plus market value of every open position."""
