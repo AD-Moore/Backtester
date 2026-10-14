@@ -70,6 +70,28 @@ def test_oversell_raises_and_leaves_cash_untouched():
     assert portfolio.position("AAPL").quantity == 5
 
 
+def test_commission_is_paid_on_top_of_a_buy_and_out_of_a_sell():
+    portfolio = Portfolio(cash=1000.0)
+    portfolio.execute(buy(5), 100.0, commission=10.0)
+    assert portfolio.cash == pytest.approx(490.0)  # 1000 - 500 - 10
+    portfolio.execute(sell(5), 100.0, commission=10.0)
+    assert portfolio.cash == pytest.approx(980.0)  # 490 + 500 - 10
+
+
+def test_buy_that_is_only_unaffordable_because_of_commission_raises():
+    portfolio = Portfolio(cash=1000.0)
+    with pytest.raises(ValueError, match="insufficient cash"):
+        portfolio.execute(buy(10), 100.0, commission=1.0)
+    assert portfolio.cash == 1000.0
+    assert not portfolio.position("AAPL").is_open
+
+
+def test_negative_commission_is_rejected():
+    portfolio = Portfolio(cash=1000.0)
+    with pytest.raises(ValueError, match="commission"):
+        portfolio.execute(buy(1), 100.0, commission=-1.0)
+
+
 def test_equity_is_cash_plus_open_positions():
     portfolio = Portfolio(cash=1000.0)
     portfolio.execute(buy(2, "AAPL"), 100.0)
