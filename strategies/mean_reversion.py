@@ -5,12 +5,13 @@ from strategies.strategy_base import Strategy
 
 
 class MeanReversion(Strategy):
-    """Buy when price is stretched far below its rolling mean, sell once
-    it has reverted back to it.
+    """Buy a symbol when its price is stretched far below its rolling
+    mean, sell once it has reverted back to it.
 
     "Stretched" is measured as a z-score: how many rolling standard
     deviations Close sits from its rolling mean (the same idea as
-    Bollinger Bands). Enter long when z < -entry_z, exit when z >= exit_z.
+    Bollinger Bands). Buy when z < -entry_z, sell when z >= exit_z. Each
+    symbol is judged on its own and gets an equal share of the portfolio.
     """
 
     def __init__(self, window: int = 20, entry_z: float = 2.0, exit_z: float = 0.0):
@@ -24,13 +25,15 @@ class MeanReversion(Strategy):
         self.entry_z = entry_z
         self.exit_z = exit_z
 
-    def generate_signals(self, df: pd.DataFrame) -> pd.Series:
-        rolling = df["Close"].rolling(window=self.window)
-        z_score = (df["Close"] - rolling.mean()) / rolling.std()
+    def generate_weights(self, closes: pd.DataFrame) -> pd.DataFrame:
+        rolling = closes.rolling(window=self.window)
+        z_score = (closes - rolling.mean()) / rolling.std()
 
-        # Mark only the days that change the position, then carry each
-        # decision forward: between an entry and an exit we stay long.
-        signals = pd.Series(np.nan, index=df.index)
-        signals[z_score < -self.entry_z] = 1
-        signals[z_score >= self.exit_z] = 0
-        return signals.ffill().fillna(0).astype(int)
+        # Mark only the days that change the position (1 = buy, 0 = sell),
+        # then carry each decision forward: between a buy and a sell we
+        # keep holding.
+        held = pd.DataFrame(np.nan, index=closes.index, columns=closes.columns)
+        held[z_score < -self.entry_z] = 1.0
+        held[z_score >= self.exit_z] = 0.0
+        held = held.ffill().fillna(0.0)
+        return held / len(closes.columns)

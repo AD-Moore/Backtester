@@ -4,31 +4,15 @@ from datetime import datetime
 
 @dataclass(frozen=True)
 class Trade:
-    """One completed round trip (entry buy + exit sell). Immutable, like
-    Order -- it's a record of something that already happened.
-
-    Prices are the actual fill prices (slippage included); commissions
-    are what was paid on each side."""
+    """One finished position in one symbol, from the day it was opened to
+    the day it was fully closed. Immutable, like Order -- it's a record
+    of something that already happened."""
 
     symbol: str
     entry_date: datetime
     exit_date: datetime
-    quantity: int
-    entry_price: float
-    exit_price: float
-    entry_commission: float = 0.0
-    exit_commission: float = 0.0
-
-    @property
-    def cost(self) -> float:
-        """Total cash paid to open the trade."""
-        return self.quantity * self.entry_price + self.entry_commission
-
-    @property
-    def pnl(self) -> float:
-        """Net profit after costs on both sides."""
-        proceeds = self.quantity * self.exit_price - self.exit_commission
-        return proceeds - self.cost
+    cost: float  # money committed when the position was opened, commission included
+    pnl: float  # net profit: all cash received minus all cash paid, costs included
 
     @property
     def return_pct(self) -> float:

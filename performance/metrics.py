@@ -185,12 +185,13 @@ def print_performance_report(
 
 
 if __name__ == "__main__":
-    from data.loader import load_ticker
+    from data.loader import load_price_panel
     from engine.backtest_engine import BacktestEngine
     from strategies.moving_average_crossover import MovingAverageCrossover
 
-    df = load_ticker("AAPL")
-    engine = BacktestEngine(df, MovingAverageCrossover(short_window=20, long_window=50))
-    equity_curve = engine.run()
+    opens = load_price_panel("Open", ["AAPL"])
+    closes = load_price_panel("Close", ["AAPL"])
+    strategy = MovingAverageCrossover(short_window=20, long_window=50)
+    result = BacktestEngine(opens, closes, strategy).run()
 
-    print_performance_report("AAPL / ma_20_50", equity_curve, trades=engine.trades)
+    print_performance_report("AAPL / ma_crossover", result.equity_curve, trades=result.trades)

@@ -4,8 +4,9 @@ from strategies.strategy_base import Strategy
 
 
 class BuyAndHold(Strategy):
-    """Always long. The baseline every other strategy should beat on a
-    risk-adjusted basis."""
+    """Always fully invested, split equally across the symbols. The
+    baseline every other strategy should beat on a risk-adjusted basis."""
 
-    def generate_signals(self, df: pd.DataFrame) -> pd.Series:
-        return pd.Series(1, index=df.index, dtype=int)
+    def generate_weights(self, closes: pd.DataFrame) -> pd.DataFrame:
+        equal_share = 1 / len(closes.columns)
+        return pd.DataFrame(equal_share, index=closes.index, columns=closes.columns)

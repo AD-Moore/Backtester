@@ -18,8 +18,11 @@ def curve(values):
 
 
 def trade(entry_price, exit_price, quantity=10):
-    """Build a completed trade; the dates don't matter to any test here."""
-    return Trade("AAPL", datetime(2024, 1, 2), datetime(2024, 1, 9), quantity, entry_price, exit_price)
+    """Build a finished trade that bought at one price and sold at another.
+    The dates don't matter to any test here."""
+    cost = quantity * entry_price
+    pnl = quantity * (exit_price - entry_price)
+    return Trade("AAPL", datetime(2024, 1, 2), datetime(2024, 1, 9), cost, pnl)
 
 
 def test_total_return():

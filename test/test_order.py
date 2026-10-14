@@ -7,7 +7,6 @@ import pytest
 
 from engine.order import Order
 
-
 # Arbitrary fixed timestamp; no test here depends on its value.
 DATE = datetime(2024, 1, 2)
 
