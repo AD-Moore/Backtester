@@ -1,0 +1,13 @@
+[tool.pytest.ini_options]
+testpaths = ["test"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, import order, likely bugs, outdated syntax
+select = ["E", "W", "F", "I", "B", "UP"]
+# zip() is only used on sequences built to the same length
+ignore = ["B905"]
