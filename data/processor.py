@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from data.config import RAW_DATA_PATH, PROCESSED_DATA_PATH, OHLCV_COLUMNS
+from data.config import OHLCV_COLUMNS, PROCESSED_DATA_PATH, RAW_DATA_PATH
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
