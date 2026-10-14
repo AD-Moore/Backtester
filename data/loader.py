@@ -27,8 +27,10 @@ def load_all() -> dict[str, pd.DataFrame]:
     }
 
 
-def load_price_panel(field: str = "Close") -> pd.DataFrame:
-    """Build a DataFrame where each column is a ticker and each row is a date."""
-    data = load_all()
+def load_price_panel(field: str = "Close", tickers: list[str] | None = None) -> pd.DataFrame:
+    """Build a DataFrame where each column is a ticker and each row is a
+    date. Uses every processed ticker unless a list is given. Only dates
+    that every ticker has a price for are kept, so the columns line up."""
+    data = load_tickers(tickers) if tickers else load_all()
     prices = {ticker: df[field] for ticker, df in data.items()}
-    return pd.DataFrame(prices).sort_index()
+    return pd.DataFrame(prices).sort_index().dropna()
